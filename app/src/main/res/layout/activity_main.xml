@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/icon_bg"
+    tools:context="com.zzhou.entrance.guard.module.MainActivity">
+    <!--<com.zzhou.entrance.guard.widget.CameraPreview-->
+        <!--android:id="@+id/activity_camera_surfaceview"-->
+        <!--android:layout_width="0.1dp"-->
+        <!--android:layout_height="0.1dp" >-->
+    <!--</com.zzhou.entrance.guard.widget.CameraPreview>-->
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <ImageView
+            android:id="@+id/activity_screen_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY"
+            android:src="@drawable/icon_bg"
+            android:visibility="visible"/>
+        <com.zzhou.entrance.guard.widget.CustomerVideoView
+            android:id="@+id/activity_screen_video"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="bottom"
+            android:visibility="gone">
+            <Button
+                android:id="@+id/call_button"
+                android:layout_width="wrap_content"
+                android:layout_height="45dp"
+                android:layout_weight="1"
+                android:text="测试拨打"/>
+            <Button
+                android:id="@+id/button"
+                android:layout_width="wrap_content"
+                android:layout_height="45dp"
+                android:layout_weight="1"
+                android:text="测试挂断"/>
+        </LinearLayout>
+    </FrameLayout>
+    <include layout="@layout/dialog_customer"/>
+    <!--<TextView-->
+        <!--android:id="@+id/activity_tips"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:background="@mipmap/icon_bg"-->
+        <!--android:gravity="center"-->
+        <!--android:textSize="@dimen/common_text_size"-->
+        <!--app:layout_constraintLeft_toLeftOf="parent"-->
+        <!--app:layout_constraintRight_toRightOf="parent"-->
+        <!--android:visibility="gone"/>-->
+    <FrameLayout
+        android:id="@+id/camera"
+        android:layout_width="0.1dp"
+        android:layout_height="0.1dp"></FrameLayout>
+</FrameLayout>

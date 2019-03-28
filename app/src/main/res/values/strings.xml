@@ -1,0 +1,43 @@
+<resources xmlns:ns1="http://schemas.android.com/tools">
+    <string name="app_name">智慧门禁</string>
+    <string name="app_splash">欢迎使用智慧门禁%s</string>
+
+    <string name="on_reopening_door_tips">正在开门，请勿重复操作....</string>
+    <string name="on_opening_door_tips">正在开门，请稍后....</string>
+    <string name="on_opening_door_remeta_warn">远程开门，请稍后....</string>
+    <string name="on_calling_tips">正在呼叫，请稍后....</string>
+    <string name="on_mobile_calling_tips">正在呼叫手机号，请稍后....</string>
+    <string name="on_calling_tips_error">网络错误，请稍后再试....</string>
+    <string name="on_callinged">呼叫转接中，等待接听....</string>
+    <string name="open_door_fail">开门失败，请联系管理员....</string>
+    <string name="open_door_passfail">开门失败，请确认密码是否正确....</string>
+    <string name="open_door_success">门已开请进....</string>
+    <string name="call_fail">呼叫失败....</string>
+    <string name="call_fail_number">呼叫失败,号码不存在,....</string>
+    <string name="call_finish">呼叫无法接通，已转接....</string>
+    <string name="call_on">呼叫接通....</string>
+    <string name="app_install_ing">正在初始化，请稍后....</string>
+
+    <string name="nfc_disabled">NFC disabled</string>
+    <string name="nfc_enabled">NFC enabled</string>
+    <string name="nfc_not_support">NFC not support</string>
+
+    <color name="customactivityoncrash_accent">#FF4081</color>
+    <color name="customactivityoncrash_primary">#3F51B5</color>
+    <color name="customactivityoncrash_primary_dark">#283593</color>
+    <dimen name="customactivityoncrash_activity_horizontal_margin">16dp</dimen>
+    <dimen name="customactivityoncrash_activity_vertical_margin">16dp</dimen>
+    <dimen name="customactivityoncrash_error_activity_error_details_text_size">12sp</dimen>
+    <string name="customactivityoncrash_error_activity_close_app">关闭退出</string>
+    <string name="customactivityoncrash_error_activity_error_details">错误详情</string>
+    <string name="customactivityoncrash_error_activity_error_details_clipboard_label">Error information</string>
+    <string name="customactivityoncrash_error_activity_error_details_close">Close</string>
+    <string name="customactivityoncrash_error_activity_error_details_copied">Copied to clipboard</string>
+    <string name="customactivityoncrash_error_activity_error_details_copy">Copy to clipboard</string>
+    <string name="customactivityoncrash_error_activity_error_details_title">Error details</string>
+    <string name="customactivityoncrash_error_activity_error_occurred_explanation">抱歉,APP在您的机型发生了兼容性问题.\n工程师将立即为您修复.</string>
+    <string name="customactivityoncrash_error_activity_restart_app">重启应用</string>
+    <string name="customactivityoncrash_error_activity_unknown_exception">Unknown exception</string>
+
+    <style name="CustomActivityOnCrashTheme" parent="android:Theme.Light" ns1:ignore="ResourceName" />
+</resources>

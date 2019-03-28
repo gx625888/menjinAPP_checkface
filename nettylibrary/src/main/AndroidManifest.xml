@@ -1,0 +1,21 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.zzhou.entrance.guard.netty">
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application>
+        <service
+            android:name=".NettyService"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <service android:name=".MyJobService"
+            android:enabled="true"
+            android:exported="true"
+            android:process=":jobs"
+            android:permission="android.permission.BIND_JOB_SERVICE"/>
+
+        <receiver android:name=".MyAlarmReceiver" />
+    </application>
+</manifest>
