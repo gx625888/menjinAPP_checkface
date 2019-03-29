@@ -1068,8 +1068,8 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
                 spPool.play(sound, 1, 1, 1, 0, 1);
             }
         }.start();
-        //调用SendNotify--开门后
-        SendNotify.doorsendNotify(flag,houseNum,"开门结束");
+        //调用SendNotify--开门后*弃用*
+        //SendNotify.doorsendNotify(flag,houseNum,"开门结束");
     }
 
     private void playVideo(final String url) {
