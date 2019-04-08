@@ -227,6 +227,7 @@ public class MainModel implements IMainContract.IModel {
     public void getHouses() {
         LogUtils.d("start update house");
 
+        //获取服务器端户主信息
         EasyHttp.get(Constants.Api.UPDATAE_HOUSER)
                 .execute(new SimpleCallBack<String>() {
                     @Override
@@ -252,6 +253,7 @@ public class MainModel implements IMainContract.IModel {
                                     values.put(Ws.HouseTable.ID, houseData.getId());
                                     values.put(Ws.HouseTable.NO, houseData.getNo());
                                     values.put(Ws.HouseTable.PHONE, houseData.getPhone());
+                                    LogUtils.d("组织数据准备在Android设备保存数据-phone=" + houseData.getPhone());
                                     values.put(Ws.HouseTable.JURISDICTION, houseData.getJurisdiction());
 //                                    values.put("isAdd", accountData.getIsAdd());//根据后台要求做全量更新，故注释掉
                                     Uri uri = MyApplication.getInstance().getResovler().insert(Ws.HouseTable.CONTENT_URI, values);
@@ -455,13 +457,14 @@ public class MainModel implements IMainContract.IModel {
      */
     @Override
     public void callMobileAccount(final String mobileNo, final CallBackListener callBack) {
-        LogUtils.d("呼叫流程step2_model_callMobileAccount：start callMobileAccount mobileNo = " + mobileNo);
+        LogUtils.d("呼叫流程step2_model_callMobileAccount：start callMobileAccount mobileNo =" + mobileNo);
         Observable observable = Observable.create(new ObservableOnSubscribe<HouseData>() {
             @Override
             public void subscribe(ObservableEmitter<HouseData> e) {
                 try {
+
                     Cursor cursor = MyApplication.getInstance().getResovler().query(Ws.HouseTable.CONTENT_URI, null,
-                            Ws.HouseTable.PHONE + "=?", new String[]{mobileNo}, null);
+                            Ws.HouseTable.PHONE + " like ?", new String[]{"%"+mobileNo+"%"}, null);
 //                    Cursor cursor = MyApplication.getInstance().getResovler().query(Ws.AccountTable.CONTENT_URI, null,
 //                            null, null, null);
                     if (cursor == null) {
@@ -474,6 +477,7 @@ public class MainModel implements IMainContract.IModel {
                             HouseData house = HouseData.fromCursor(new CursorHelper(cursor));
                             e.onNext(house);
                         } else {
+                            LogUtils.d("callMobileAccount >> no mobile account >>>>>>>>>>>>");
                             e.onError(new Throwable("callMobileAccount >>  no mobile account >>>>>>>>>>>>>>>>>>>>>>>>>>"));
                         }
                     }

@@ -154,6 +154,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
     static final int MODE_REMOTE = Constants.MODE_REMOTE;//远程
     static final int MODE_CALL = Constants.MODE_CALL;//呼叫
     static final int MODE_SENDWX = Constants.MODE_SENDWX;//呼叫时抓拍照片，推送到微信公众号
+    static final int MODE_CALLPHONE = Constants.MODE_CALLPHONE;//直接呼叫手机号
     int mode = MODE_CARD;
 
     List<Bitmap> imslist = new ArrayList();
@@ -1218,7 +1219,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
             }
         } else { //非'#'开头，呼叫开门
             if(input.length()>6){ //手机号开门
-                if (input.length() > 12) { //手机号+# 不能超过12为
+                if (input.length() > 12) { //手机号+# 不能超过12位
                     return INPUT_ERROR;
                 }
                 if (input.length() < 6) { //手机号+# 不能小于6位
@@ -1232,7 +1233,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
                 }
 
             }else{ //房号开门
-                if (input.length() > 6) {//房号+# 不能超过6为
+                if (input.length() > 6) {//房号+# 不能超过6位
                     return INPUT_ERROR;
                 }
                 if (input.length() < 4) {//房号+# 不能小于4位

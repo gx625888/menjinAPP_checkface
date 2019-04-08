@@ -16,6 +16,7 @@ public interface Constants {
     static final int MODE_REMOTE = 2;//远程
     static final int MODE_CALL = 3;//呼叫
     static final int MODE_SENDWX = 4;//呼叫时抓拍照片，推送到微信公众号
+    static final int MODE_CALLPHONE = 5;//直接呼叫手机号
 
     interface Api{
         /*屏保广告 图片\视频*/
