@@ -45,6 +45,15 @@
                 android:layout_weight="1"
                 android:text="测试挂断"/>
         </LinearLayout>
+
+        <ImageView
+            android:id="@+id/QrCode_image"
+            android:layout_marginTop="600dp"
+            android:layout_marginLeft="1100dp"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:scaleType="fitXY"
+            android:visibility="visible"/>
     </FrameLayout>
     <include layout="@layout/dialog_customer"/>
     <!--<TextView-->

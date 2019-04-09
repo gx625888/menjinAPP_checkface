@@ -72,6 +72,7 @@ import com.zzhou.entrance.guard.sendNotify.SendNotify;
 import com.zzhou.entrance.guard.source.Ws;
 import com.zzhou.entrance.guard.util.FileUtils;
 import com.zzhou.entrance.guard.util.LogUtils;
+import com.zzhou.entrance.guard.util.QRCodeUtil;
 import com.zzhou.entrance.guard.util.SystemTool;
 import com.zzhou.entrance.guard.util.ToastShow;
 import com.zzhou.entrance.guard.widget.CustomerVideoView;
@@ -97,6 +98,7 @@ import io.reactivex.schedulers.Schedulers;
  */
 public class MainActivity extends NettyActivity implements IMainContract.IView, SensorEventListener, CallStateCallBack {
     ImageView mAdsImage;
+    ImageView QrCodeImage;
     CustomerVideoView mVideoView;
     LinearLayout mDialogLl;
     TextView mTitle;
@@ -239,6 +241,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         setContentView(R.layout.activity_main);
 //        mySurfaceView = findViewById(R.id.activity_camera_surfaceview);
         mAdsImage = (ImageView) findViewById(R.id.activity_screen_image);
+        QrCodeImage = (ImageView) findViewById(R.id.QrCode_image);
         mVideoView = (CustomerVideoView) findViewById(R.id.activity_screen_video);
         mDialogLl = (LinearLayout) findViewById(R.id.dialog_Ll);
         mContent = (TextView) findViewById(R.id.dialog_content);
@@ -287,6 +290,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         initNFC();
         initIO();
         initSensors();
+        initQRCode();
     }
 
     protected void make_SharedPre(String houseNum){
@@ -1484,6 +1488,15 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mLightSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
         mTemperatureSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE);
+    }
+
+    //创建二维码并展示在页面最上层
+    private void initQRCode(){
+        //获取本机Mac
+        String maccode = MyApplication.getInstance().getDeviceNo();
+        Bitmap mBitmap = QRCodeUtil.createQRCodeBitmap("http://47.101.175.155:2280/door/sendNotify.itf?maccode="+maccode, 480, 480);
+        QrCodeImage.bringToFront();
+        QrCodeImage.setImageBitmap(mBitmap);
     }
 
     //refer: http://nfc-tools.org/index.php?title=ISO14443A
