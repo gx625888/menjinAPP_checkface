@@ -86,4 +86,6 @@ dependencies {
     //    compile 'cn.testin.analysis:bugout-ndk:latest.integration'
     implementation 'com.android.support:support-v4:28+'
     implementation project(':ZLogLib')
+    //二维码
+    compile 'com.google.zxing:core:3.3.0'
 }
