@@ -234,6 +234,7 @@ public class MainPresenter implements IMainContract.IPresenter {
                     if (house == null || StringUtil.isNullOrEmpty(house.getPhone())) {
                         iView.callMobileAccountResult(false, "",0);
                     } else {
+                        //根据查询本地数据获取的手机号进行后续操作，可在此处修改参数'house.getPhone()->键盘输入的手机号'直接进行呼叫
                         iView.callMobileAccountResult(true, house.getPhone(),house.getJurisdiction());
                     }
                 } else {

@@ -12,6 +12,7 @@
     <!--</com.zzhou.entrance.guard.widget.CameraPreview>-->
 
     <FrameLayout
+        android:id="@+id/main"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <ImageView
@@ -19,13 +20,25 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="fitXY"
-            android:src="@drawable/icon_bg"
+            android:src="@drawable/bg_od_v1"
             android:visibility="visible"/>
         <com.zzhou.entrance.guard.widget.CustomerVideoView
             android:id="@+id/activity_screen_video"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone"/>
+        <SurfaceView
+            android:id="@+id/surface_view1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            >
+        </SurfaceView>
+        <ImageView
+            android:id="@+id/QrCode_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY"
+            android:visibility="visible"/>
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -45,15 +58,6 @@
                 android:layout_weight="1"
                 android:text="测试挂断"/>
         </LinearLayout>
-
-        <ImageView
-            android:id="@+id/QrCode_image"
-            android:layout_marginTop="600dp"
-            android:layout_marginLeft="1100dp"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:scaleType="fitXY"
-            android:visibility="visible"/>
     </FrameLayout>
     <include layout="@layout/dialog_customer"/>
     <!--<TextView-->
@@ -68,6 +72,10 @@
         <!--android:visibility="gone"/>-->
     <FrameLayout
         android:id="@+id/camera"
-        android:layout_width="0.1dp"
-        android:layout_height="0.1dp"></FrameLayout>
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"></FrameLayout>
+    <FrameLayout
+        android:id="@+id/surface_view3"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"></FrameLayout>
 </FrameLayout>

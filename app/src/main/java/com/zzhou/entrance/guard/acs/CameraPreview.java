@@ -6,6 +6,8 @@ import android.hardware.Camera.PreviewCallback;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.zzhou.entrance.guard.util.LogUtils;
+
 import java.io.IOException;
 
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
@@ -27,6 +29,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public void surfaceCreated(SurfaceHolder holder) {
         try {
             mCamera.setPreviewDisplay(holder);
+            LogUtils.d("CameraPreview>>>>>>surfaceCreated");
 		} catch (NullPointerException e) {
         } catch (IOException e) {
         }

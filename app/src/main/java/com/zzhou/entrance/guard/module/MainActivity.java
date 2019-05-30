@@ -5,7 +5,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
@@ -39,7 +39,10 @@ import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.view.KeyEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -61,15 +64,12 @@ import com.zzhou.entrance.guard.acs.CameraPreview;
 import com.zzhou.entrance.guard.acs.Gpio;
 import com.zzhou.entrance.guard.bean.AccountData;
 import com.zzhou.entrance.guard.bean.Ads;
-import com.zzhou.entrance.guard.bean.HouseData;
 import com.zzhou.entrance.guard.bean.ImeiNo;
 import com.zzhou.entrance.guard.module.mvp.IMainContract;
 import com.zzhou.entrance.guard.module.mvp.MainPresenter;
 import com.zzhou.entrance.guard.netty.activity.NettyActivity;
 import com.zzhou.entrance.guard.netty.bean.MessageInfo;
 import com.zzhou.entrance.guard.netty.bean.RequestCmd;
-import com.zzhou.entrance.guard.sendNotify.SendNotify;
-import com.zzhou.entrance.guard.source.Ws;
 import com.zzhou.entrance.guard.util.FileUtils;
 import com.zzhou.entrance.guard.util.LogUtils;
 import com.zzhou.entrance.guard.util.QRCodeUtil;
@@ -205,6 +205,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
     };
     private Handler longPassHanlder = new Handler();
 
+    //长按'#'，显示MAC地址
     Runnable longRun = new Runnable() {
         @Override
         public void run() {
@@ -215,6 +216,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
             }
         }
     };
+
     //无操作倒计时
     Handler handler = new Handler();
     private Runnable timeRun = new Runnable() {
@@ -224,6 +226,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
             hideDialog();
         }
     };
+
     //camera preview
     private Camera mCamera;
     private CameraPreview mCameraPreviewSurface;
@@ -290,7 +293,10 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         initNFC();
         initIO();
         initSensors();
-        initQRCode();
+        //初始化加载二维码
+        //initQRCode();
+        //初始化摄像头画面显示
+        initSurfaceCamera();
     }
 
     protected void make_SharedPre(String houseNum){
@@ -450,13 +456,13 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
                 break;
             case KeyEvent.KEYCODE_STAR://'*' key
 //                ToastShow.show(this, "onKeyDown KEYCODE_STAR");
-                break;
             case KeyEvent.KEYCODE_POUND://'#' key
 //                LogUtils.d(TAG, "onKeyDown KEYCODE_POUND");
 //                if (inputStr.length() > 0) {
 //                    isOnLongPass = false;
 //                    break;
 //                }
+                //长按'#'键显示mac地址
                 if (!isOnLongPass) {
                     inputStr.append("\t#");
                     isOnLongPass = true;
@@ -599,6 +605,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         }
 
         showDialog(false, inputStr.toString(), true);
+        //验证按键输入内容(#号开头和非#号开头等等)
         int format = formartInput(inputStr.toString().replaceAll("\t", ""));
 //        Toast.makeText(this, "format = " + format, Toast.LENGTH_SHORT).show();
         switch (format) {
@@ -705,6 +712,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
 //                Toast.makeText(this, "******************更新广告*******************", Toast.LENGTH_SHORT).show();
                 LogUtils.d("******************更新广告*******************");
                 iPresenter.getAdsInfo();
+                QrCodeImage.bringToFront();
                 break;
             case RequestCmd.UPDATE_ACCOUNTS:
                 // TODO: 2018/9/14 更新用户数据
@@ -824,7 +832,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
      * 呼叫手机号结果
      * 实现接口 IMainContract.IView-callMobileAccountResult
      * @param isSuccess
-     * @param msg
+     * @param msg 呼叫手机号
      * @param which
      */
     @Override
@@ -1494,10 +1502,65 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
     private void initQRCode(){
         //获取本机Mac
         String maccode = MyApplication.getInstance().getDeviceNo();
-        Bitmap mBitmap = QRCodeUtil.createQRCodeBitmap("http://47.101.175.155:2280/door/sendNotify.itf?maccode="+maccode, 480, 480);
+        LogUtils.d(TAG,"------创建二维码获取Mac------:"+maccode);
+        String qrcodeurl = "https://nja.cloud.cmbchina.com/yunmenjin/community/autoOpen.htm?deviceId=";
+        Bitmap mBitmap = QRCodeUtil.createQRCodeBitmap(qrcodeurl+maccode, 480);
         QrCodeImage.bringToFront();
         QrCodeImage.setImageBitmap(mBitmap);
+        setViewSize(QrCodeImage);
     }
+
+    //设置view大小和位置
+    private void setViewSize(ImageView view) {
+
+//        Rect imgRect = new Rect();
+//        FrameLayout.LayoutParams focusItemParams = new FrameLayout.LayoutParams(10, 10);
+//        view.getGlobalVisibleRect(imgRect);
+//
+//        focusItemParams.leftMargin =imgRect.left;
+//        focusItemParams.topMargin =imgRect.top;
+//        focusItemParams.width = imgRect.width();
+//        focusItemParams.height = imgRect.height();
+//        view.setLayoutParams(focusItemParams);//focusView为你需要设置位置的VIEW
+
+
+
+        ViewGroup.MarginLayoutParams margin = new ViewGroup.MarginLayoutParams(view.getLayoutParams());
+        //8寸屏
+        int dpTop = dp2px( 335);
+        int dpRight = dp2px( 10);
+        int dpLeft=dp2px( 770);
+        margin.setMargins(dpLeft, dpTop, dpRight, 0);
+        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(margin);
+        layoutParams.width = 160;
+        layoutParams.height= 160;
+        view.setLayoutParams(layoutParams);
+//
+//        //10寸
+//
+//        DisplayMetrics metric = new DisplayMetrics();
+//        getWindowManager().getDefaultDisplay().getMetrics(metric);
+//
+//        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(margin);
+//        layoutParams.width = 130;
+//        layoutParams.height= 130;
+//        view.setLayoutParams(layoutParams);
+        view.bringToFront();
+    }
+    public  int dp2px(float dpValue){
+        final float scale=MainActivity.this.getResources().getDisplayMetrics().density;
+
+        return (int)(dpValue*scale+0.5f);
+    }
+
+    //初始化surface
+    private void initSurfaceCamera(){
+        SurfaceView mSurfaceView = (SurfaceView)findViewById(R.id.surface_view1);
+        SurfaceHolder mSurfaceHolder = mSurfaceView.getHolder();
+        mSurfaceHolder.addCallback(new SurfaceCallback());
+    }
+
+
 
     //refer: http://nfc-tools.org/index.php?title=ISO14443A
     private void readNfcA(Tag tag) {

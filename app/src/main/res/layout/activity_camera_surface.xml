@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/icon_bg"
+    tools:context="com.zzhou.entrance.guard.module.SurfaceActivity">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <SurfaceView
+            android:id="@+id/surface_view2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            >
+        </SurfaceView>
+    </FrameLayout>
+    <include layout="@layout/dialog_customer"/>
+    <FrameLayout
+        android:id="@+id/camera"
+        android:layout_width="0.1dp"
+        android:layout_height="0.1dp"></FrameLayout>
+</FrameLayout>
