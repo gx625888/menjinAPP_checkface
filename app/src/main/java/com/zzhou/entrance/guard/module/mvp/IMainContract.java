@@ -32,6 +32,12 @@ public interface IMainContract {
 
         /*发起手机呼叫请求*/
         void callMobileAccountResult(boolean isSuccess, String msg, int which);
+
+        /*初始化人脸识别回调*/
+        void initfacecheckResult(boolean isSuccess, String msg, int which);
+
+        /*人脸识别*/
+        void facecheckResult(boolean isSuccess, String msg, int which);
     }
 
     interface IPresenter {
@@ -53,6 +59,7 @@ public interface IMainContract {
 
         void validatePass(String pass);
 
+        /*呼叫中心*/
         void imeiAccount();
 
         /*呼叫房间*/
@@ -60,6 +67,12 @@ public interface IMainContract {
 
         /*呼叫手机号*/
         void callMobileAccount(String mobileNo);
+
+        /*初始化人脸识别*/
+        void initfacecheck(String houseNo);
+
+        /*人脸识别*/
+        void facecheck(String facephoto_file,String houseId,String deviceId);
 
     }
 
@@ -88,6 +101,7 @@ public interface IMainContract {
         /*验证开门密码*/
         void validatePass(String pass, CallBackListener callBack);
 
+        /*呼叫中心*/
         void imeiAccount(CallBackListener callBack);
 
         /*呼叫房间*/
@@ -96,5 +110,10 @@ public interface IMainContract {
         /*呼叫手机号*/
         void callMobileAccount(String mobileNo, CallBackListener callBack);
 
+        /*初始化人脸识别*/
+        void initfacecheck(String houseNo,CallBackListener callBack);
+
+        /*人脸识别*/
+        void facecheck(String facephoto_file,String houseId,String deviceId, CallBackListener callBack);
     }
 }

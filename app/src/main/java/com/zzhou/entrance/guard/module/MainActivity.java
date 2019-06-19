@@ -38,7 +38,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
+import android.util.Base64;
 import android.view.KeyEvent;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -79,6 +81,8 @@ import com.zzhou.entrance.guard.widget.CustomerVideoView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -89,6 +93,10 @@ import id.zelory.compressor.Compressor;
 import io.netty.util.internal.StringUtil;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
+
+import static com.zzhou.entrance.guard.util.FileUtils.AllFileNum;
+import static com.zzhou.entrance.guard.util.FileUtils.delAllFile;
+import static com.zzhou.entrance.guard.util.FileUtils.getFileAllSize;
 
 /**
  * 屏保页面，无操作时显示界面，后台处理相关网络请求，IM消息
@@ -149,10 +157,12 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
     final static int INPUT_OPEN = 0;
     final static int INPUT_CALL = 1;
     final static int INPUT_MOBILE = 3;
+    final static int INPUT_FACE = 4;
     final static int INPUT_ERROR = 2;
 
+
     static final int MODE_CARD = Constants.MODE_CARD;//刷卡
-    static final int MODE_WXPASS = Constants.MODE_WXPASS;//微信
+    static final int MODE_WXPASS = Constants.MODE_WXPASS;//微信临时密码
     static final int MODE_REMOTE = Constants.MODE_REMOTE;//远程
     static final int MODE_CALL = Constants.MODE_CALL;//呼叫
     static final int MODE_SENDWX = Constants.MODE_SENDWX;//呼叫时抓拍照片，推送到微信公众号
@@ -161,6 +171,8 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
 
     List<Bitmap> imslist = new ArrayList();
     int time;
+    String houseId = "";
+    String housedNo = "";
     String cardNo = "";
     private boolean isOnLongPass = false;//长按#
     private boolean isShowMac = false;//是否正在显示mac地址
@@ -212,7 +224,9 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
             if (isOnLongPass) {
                 isShowMac = true;
                 inputStr.delete(0, inputStr.length());
+                //显示MAC地址
                 showDialog(false, MyApplication.getInstance().getDeviceNo(), false);
+                LogUtils.d("显示MAC地址");
             }
         }
     };
@@ -230,13 +244,31 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
     //camera preview
     private Camera mCamera;
     private CameraPreview mCameraPreviewSurface;
+    private FrameLayout facepreview;
+    private boolean isGetfacePreview = false;//人脸识别
     private boolean isGetPreview = false;
     Camera.PreviewCallback previewCb = new Camera.PreviewCallback() {
         public void onPreviewFrame(byte[] data, Camera camera) {
             takePhotoPreview(data, camera);
         }
     };
+
+
     private String callNo = "";
+
+    //设置摄像头--弃用
+    private Camera cameraObject;
+    private ShowCamera2 showCamera;
+    public static Camera isCameraAvailiable(){
+        Camera object = null;
+        try {
+            object = Camera.open();
+            LogUtils.d("打开摄像头方法2");
+        }
+        catch (Exception e){
+        }
+        return object;
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -295,8 +327,14 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         initSensors();
         //初始化加载二维码
         //initQRCode();
+        //删除"/upload"文件夹中过多的文件
+        deleteAllFiles();
         //初始化摄像头画面显示
-        initSurfaceCamera();
+        //initSurfaceCamera();
+        /*cameraObject = isCameraAvailiable();
+        showCamera = new ShowCamera2(this, cameraObject);
+        FrameLayout preview = (FrameLayout) findViewById(R.id.surface_view3);
+        preview.addView(showCamera);*/
     }
 
     protected void make_SharedPre(String houseNum){
@@ -320,22 +358,28 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         if (imslist != null && imslist.size() > 0) {
             imageHandler.postDelayed(imageRun, 4000);
         }
+        iPresenter.imeiAccount();
         new Handler(getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
                 if (mCamera == null) {
                     synchronized (MainActivity.this) {
                         if (mCamera == null) {
+                            //创建相机实例
                             mCamera = getCameraInstance();
                             mCameraPreviewSurface = new CameraPreview(MainActivity.this, mCamera, previewCb);
                             FrameLayout preview = (FrameLayout) findViewById(R.id.camera);
+                            //用于控制--人脸识别相机画面使用
+                            facepreview = preview;
                             preview.addView(mCameraPreviewSurface);
+                            LogUtils.d("创建相机实例和相机展示");
                         }
                     }
                 }
-
             }
         });
+        //删除在目录"/upload"里的文件
+        deleteAllFiles();
     }
 
     @Override
@@ -625,12 +669,14 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
             case INPUT_CALL:
                 //拨打电话----键盘输入的房号
                 mode = MODE_SENDWX;
+                //获取按键输入的房间号
                 cardNo = inputStr.toString().replaceAll("#", "")
                         .replaceAll("\t", "");
-                isGetPreview = true;
+                isGetPreview = true;//需要拍照预览
                 handler.removeCallbacks(timeRun);
                 showDialog(true, R.string.on_calling_tips, false);//正在呼叫，请稍后...
                 // TODO: 2018/9/20 呼叫中心接口
+                LogUtils.d("呼叫流程-准备-1：prepares- callAccount");
                 iPresenter.callAccount(cardNo);
                 inputStr.delete(0, inputStr.length());
                 return true;
@@ -638,9 +684,10 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
                 //拨打手机号---键盘输入的手机号
                 LogUtils.d(TAG, "验证按键操作为：输入手机号--------即将开始呼叫手机号流程");
                 mode = MODE_SENDWX;//设置抓拍图片参数
+                //获取按键输入的手机号
                 String mobileNo = inputStr.toString().replaceAll("#", "")
                         .replaceAll("\t", "");
-                isGetPreview = true;
+                isGetPreview = true;//需要拍照预览
                 handler.removeCallbacks(timeRun);
                 showDialog(true, R.string.on_mobile_calling_tips, false);//正在呼叫手机号，请稍后...
                 // TODO: 2018/9/20 呼叫中心接口
@@ -649,6 +696,20 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
                 return true;
             case INPUT_ERROR:
                 hideDialog();
+                return true;
+            case INPUT_FACE://启用人脸识别功能
+                //显示相机画面
+                showCamera();
+                mode = MODE_SENDWX;
+                isGetfacePreview = true;//需要人像识别
+                handler.removeCallbacks(timeRun);
+                //获取按键输入的房间号
+                housedNo = inputStr.toString().replaceAll("#", "")
+                        .replaceAll("\t", "");
+                LogUtils.d("人像识别流程-准备-1：prepares- facecheck---housedNo："+housedNo);
+                showDialog(true, R.string.on_initfacecheck_tips, false);
+                iPresenter.initfacecheck(housedNo);
+                inputStr.delete(0, inputStr.length());
                 return true;
             default:
         }
@@ -770,6 +831,31 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         }
     }
 
+    /**
+     * 删除指定目录下所有的文件
+     */
+    private void deleteAllFiles() {
+        String filepath = AppConfig.getInstance().APP_PATH_ROOT + "/upload";
+        int filesNum = AllFileNum(filepath);
+        LogUtils.d("目录内文件数目>>>>"+filesNum);
+        if (filesNum>5){
+            delAllFile(filepath);
+            LogUtils.d("-------------删除upload目录内文件-------------");
+        }
+        String logfilepath = AppConfig.getInstance().APP_PATH_ROOT + "/log";
+        Long filesSize = getFileAllSize(logfilepath);
+        LogUtils.d("目录占用空间>>>>"+filesSize);
+        if(filesSize>536870912){
+            delAllFile(logfilepath);
+            LogUtils.d("-------------删除日志目录内log文件-------------");
+        }
+    }
+
+    /**
+     * 验证卡号结果回调
+     * @param isSuccess
+     * @param account
+     */
     @Override
     public void validateAccountResult(boolean isSuccess, AccountData account) {
         if (isSuccess) {
@@ -874,6 +960,43 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         } else {
             showDialog(false, R.string.open_door_passfail, true);
             isOpenDooring = false;
+        }
+    }
+
+    /**
+     * 初始化人脸识别回调
+     * @param isSuccess
+     * @param msg
+     * @param which
+     */
+    @Override
+    public void initfacecheckResult(boolean isSuccess, String msg, int which) {
+        if(isSuccess){
+            showDialog(true, R.string.on_facecheck_tips, false);
+            houseId = msg;
+        }else{
+            showDialog(false, "门牌号错误", true);
+            isGetfacePreview = false;
+            isOpenDooring = false;
+        }
+    }
+
+    /**
+     * 人脸识别验证结果回调
+     * @param isSuccess
+     * @param msg
+     * @param which
+     */
+    @Override
+    public void facecheckResult(boolean isSuccess, String msg, int which) {
+        //隐藏相机画面
+        hideCamera();
+        if(isSuccess){
+            LogUtils.d("人脸识别---步骤4---执行开门操作>>>>>>"+isSuccess);
+            openDoor(2,null,0);
+        }else{
+            LogUtils.d("人脸识别---步骤4---执行开门操作>>>>>>"+isSuccess);
+            showDialog(false, "人像识别未通过", true);
         }
     }
 
@@ -1120,15 +1243,32 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         handler.postDelayed(timeRun, 6000);
     }
 
+    private synchronized void startNoTouch(int timedelayed) {
+        LogUtils.d(">>>>>>>>> start no touch ");
+        handler.removeCallbacks(timeRun);
+        LogUtils.d(">>>>>>>>> postDelayed: "+timedelayed);
+        handler.postDelayed(timeRun, timedelayed);
+    }
+
+
+
+    private void takePhotoPreview(byte[] data, Camera camera) {
+        if (isGetfacePreview){
+            LogUtils.d("takePhotoPreview>>>>人脸识别照片处理");
+            facePhotoPreview(data,camera);
+        }
+        if (isGetPreview) {
+            LogUtils.d("takePhotoPreview>>>>抓拍照片处理");
+            shootPhotoPreview(data,camera);
+        }
+    }
+
     /**
-     * 生成照片预览
+     * 抓拍-生成照片预览
      * @param data
      * @param camera
      */
-    private void takePhotoPreview(byte[] data, Camera camera) {
-        if (!isGetPreview) {
-            return;
-        }
+    private void shootPhotoPreview(byte[] data, Camera camera) {
         isGetPreview = false;
         final byte[] fdata = data;
         final Camera fcamera = camera;
@@ -1137,6 +1277,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         new Thread(new Runnable() {
             @Override
             public void run() {
+                LogUtils.d(TAG,"takePhotoPreview>>>>>>>>>>处理--抓拍照片");
                 Camera.Size size = fcamera.getParameters().getPreviewSize();
                 try {
                     YuvImage image = new YuvImage(fdata, ImageFormat.NV21, size.width, size.height, null);
@@ -1148,14 +1289,14 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
 
                         //**********************
                         //因为图片会放生旋转，因此要对图片进行旋转到和手机在一个方向上
-                        Matrix matrix = new Matrix();
-//                        matrix.preRotate(90);
-                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                        /*Matrix matrix = new Matrix();
+                        matrix.preRotate(90);
+                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);*/
                         //**********************************
                         if (bitmap != null) {
-                            LogUtils.d("拍照成功   开始压缩");
+                            LogUtils.d("抓拍照片--拍照成功   开始压缩");
                         } else {
-                            LogUtils.d("拍照失败   开始压缩");
+                            LogUtils.d("抓拍照片--拍照失败   开始压缩");
                         }
                         //创建并保存临时原图片文件
                         final File pictureFile = new File(AppConfig.getInstance().APP_PATH_ROOT, System.currentTimeMillis() + ".jpg");
@@ -1174,7 +1315,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
                                     @Override
                                     public void accept(File file) {
                                         FileUtils.deleteFile(pictureFile);//删除原图
-                                        LogUtils.d("delete 原图, 压缩后file = " + file.getAbsolutePath());
+                                        LogUtils.d("抓拍照片--delete 原图, 压缩后file = " + file.getAbsolutePath());
                                         //上传开门拍照信息
                                         iPresenter.uploadOpenInfo(fmode, fcardNo, file);
                                     }
@@ -1182,7 +1323,7 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
                                     @Override
                                     public void accept(Throwable throwable) {
 //                                throwable.printStackTrace();
-                                        LogUtils.d("保存照片失败 throwable " + throwable.getMessage());
+                                        LogUtils.d("抓拍照片--保存照片失败 throwable " + throwable.getMessage());
                                     }
                                 });
                         fos.close();
@@ -1194,6 +1335,128 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
             }
         }).start();
     }
+
+    private void showCamera(){
+        //显示相机画面
+        facepreview.getLayoutParams().width = 300;
+        facepreview.getLayoutParams().height = 300;
+        int rotation = this.getWindowManager().getDefaultDisplay().getRotation();
+        int degrees = 0;
+        switch (rotation){
+            case Surface.ROTATION_0 : degrees = 90;break;
+            case Surface.ROTATION_90 : degrees = 90;break;
+            case Surface.ROTATION_180 : degrees = 180;break;
+        }
+        mCamera.setDisplayOrientation(degrees);
+        LogUtils.d(TAG,"facePhotoPreview>>>>>显示人脸图像：degrees>>>>"+degrees);
+    }
+
+    //弃用
+    private void showCamera2(){
+        //显示相机画面
+        Camera thiscamera = getCameraInstance();
+        thiscamera.setDisplayOrientation(180);
+        CameraPreview thisCP = new CameraPreview(MainActivity.this, thiscamera, null);
+        FrameLayout preview = (FrameLayout) findViewById(R.id.face_camera);
+        preview.getLayoutParams().width = 300;
+        preview.getLayoutParams().height = 300;
+        preview.addView(thisCP);
+        LogUtils.d(TAG,"facePhotoPreview2>>>>>显示人脸图像");
+    }
+
+    private void hideCamera(){
+        //隐藏相机画面
+        facepreview.getLayoutParams().width = 0;
+        facepreview.getLayoutParams().height = 0;
+        LogUtils.d(TAG,"facePhotoPreview>>>>>隐藏人脸图像");
+    }
+
+
+    /**
+     * 人脸识别-生成照片预览
+     * @param data
+     * @param camera
+     */
+    private void facePhotoPreview(byte[] data, Camera camera) {
+        LogUtils.d(TAG,"facePhotoPreview>>>>>>>>>>用于人脸识别的图像");
+        isGetfacePreview = false;
+        final byte[] fdata = data;
+        final Camera fcamera = camera;
+        final int fmode = mode;
+        final String fcardNo = housedNo;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                LogUtils.d(TAG,"facePhotoPreview>>>>>>>>>>处理--人脸识别的图像");
+                Camera.Size size = fcamera.getParameters().getPreviewSize();
+                try {
+                    YuvImage image = new YuvImage(fdata, ImageFormat.NV21, size.width, size.height, null);
+                    if (image != null) {
+                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                        image.compressToJpeg(new Rect(0, 0, size.width, size.height), 80, stream);
+
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
+
+                        //**********************
+                        //因为图片会放生旋转，因此要对图片进行旋转到和手机在一个方向上
+                        /*Matrix matrix = new Matrix();
+                        matrix.preRotate(90);
+                        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);*/
+                        //**********************************
+                        if (bitmap != null) {
+                            LogUtils.d("人脸识别--拍照成功   开始压缩");
+                        } else {
+                            LogUtils.d("人脸识别--拍照失败   开始压缩");
+                        }
+                        //创建并保存临时原图片文件
+                        final File pictureFile = new File(AppConfig.getInstance().APP_PATH_ROOT, System.currentTimeMillis() + ".jpg");
+                        //处理图片上传至服务器并删除本地文件
+                        FileOutputStream fos = new FileOutputStream(pictureFile);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                        if (bitmap.isRecycled()) {
+                            bitmap.recycle();
+                        }
+                        new Compressor(MainActivity.this)
+                                .setDestinationDirectoryPath(AppConfig.getInstance().APP_PATH_ROOT + "/upload")
+                                .compressToFileAsFlowable(pictureFile)
+                                .subscribeOn(Schedulers.io())
+//                        .observeOn(AndroidSchedulers.mainThread())
+                                .observeOn(Schedulers.newThread())
+                                .subscribe(new Consumer<File>() {
+                                    @Override
+                                    public void accept(File file) {
+                                        LogUtils.d("人脸识别--delete 原图, 压缩后file = " + file.getAbsolutePath());
+                                        //把照片转码base64
+                                        String simage = null;
+                                        try {
+                                            simage = imageToBase64(pictureFile);
+                                        } catch (FileNotFoundException e) {
+                                            e.printStackTrace();
+                                        }
+                                        //上传人脸识别拍照信息
+                                        iPresenter.facecheck(simage,houseId,MyApplication.getInstance().getDeviceNo());
+                                        //上传开门拍照信息
+                                        iPresenter.uploadOpenInfo(fmode, fcardNo, file);
+                                        //删除原图
+                                        FileUtils.deleteFile(pictureFile);
+                                    }
+                                }, new Consumer<Throwable>() {
+                                    @Override
+                                    public void accept(Throwable throwable) {
+//                                throwable.printStackTrace();
+                                        LogUtils.d("人脸识别--保存照片失败 throwable " + throwable.getMessage());
+                                    }
+                                });
+                        fos.close();
+                        stream.close();
+                    }
+                } catch (Exception ex) {
+                    LogUtils.e("Sys", "Error:" + ex.getMessage());
+                }
+            }
+        }).start();
+    }
+
 
     private void initAudioRaw() {
         spPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
@@ -1220,6 +1483,11 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
 //        if (input.indexOf("#") > 0) {
 //            return INPUT_ERROR;
 //        }
+        if(input.startsWith("#") && input.length()>1){
+            if(input.endsWith("#")){
+                return INPUT_FACE;
+            }
+        }
         if (input.startsWith("#")) {//已'#'开头，临时密码开门
             if (input.length() == 7) {
                 return INPUT_OPEN;
@@ -1305,6 +1573,27 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         });
     }
 
+    private synchronized void showDialog(final boolean isAvi, final String res, final boolean isStartNoTouch, int timedelayed) {
+        LogUtils.d("showDialog isAvi = " + isAvi + "  res = " + res + "  isStartNoTouch = " + isStartNoTouch);
+        if (isStartNoTouch) {
+            startNoTouch(timedelayed);
+        } else {
+            handler.removeCallbacks(timeRun);
+        }
+        new Handler(getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                mDialogLl.setVisibility(View.VISIBLE);
+                if (isAvi) {
+                    mAvi.show();
+                } else {
+                    mAvi.hide();
+                }
+                mContent.setText(res);
+            }
+        });
+    }
+
     private synchronized void hideDialog() {
 //        ToastShow.show(instence, "隐藏对话框");
         new Handler(getMainLooper()).post(new Runnable() {
@@ -1328,10 +1617,38 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
         }
     }
 
+    //获取相机ID
+    public static int getCameraNum(){
+        //有多少个摄像头
+        int numberOfCameras = Camera.getNumberOfCameras();
+        int cameraId = 0;
+
+        for (int i = 0; i < numberOfCameras; ++i) {
+            final Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+
+            Camera.getCameraInfo(i, cameraInfo);
+            //后置摄像头
+            if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                cameraId = i;
+                LogUtils.d("后置摄像头"+i);
+            }
+            //前置摄像头
+            else if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                cameraId = i;
+                LogUtils.d("前置摄像头"+i);
+            }
+        }
+        return cameraId;
+    }
+
+    //相机实例
     public static Camera getCameraInstance() {
+        int cameraId = getCameraNum();
         Camera c = null;
         try {
-            c = Camera.open();
+            //c = Camera.open();
+            c = Camera.open(cameraId);
+            LogUtils.d("getCameraInstance>>>>>>>>>>>>camera--open");
         } catch (Exception e) {
         }
         return c;
@@ -1361,6 +1678,40 @@ public class MainActivity extends NettyActivity implements IMainContract.IView, 
                 e.printStackTrace();
             }
         }
+    }
+
+    /**
+     * 将图片转换成Base64编码的字符串
+     * @param file
+     * @return
+     */
+    public synchronized String imageToBase64(File file) throws FileNotFoundException {
+        LogUtils.d(TAG,"图像转码Base64");
+        byte[] data = null;
+        String result = null;
+        FileInputStream inputFile = new FileInputStream(file);
+        try{
+            //创建一个字符流大小的数组。
+            data = new byte[inputFile.available()];
+            //写入数组
+            inputFile.read(data);
+            //用默认的编码格式进行编码
+            result = Base64.encodeToString(data,Base64.DEFAULT);
+        }catch (Exception e){
+            e.printStackTrace();
+            LogUtils.d(TAG,e.toString());
+        }finally {
+            if(null !=inputFile){
+                try {
+                    inputFile.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    LogUtils.d(TAG,e.toString());
+                }
+            }
+
+        }
+        return result;
     }
 
 /******************************************************************************************/

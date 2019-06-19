@@ -14,23 +14,31 @@ import com.zzhou.entrance.guard.Constants;
 import com.zzhou.entrance.guard.MyApplication;
 import com.zzhou.entrance.guard.bean.AccountData;
 import com.zzhou.entrance.guard.bean.Ads;
+import com.zzhou.entrance.guard.bean.BaiduFacecheck;
+import com.zzhou.entrance.guard.bean.BaiduFacecheckResult;
 import com.zzhou.entrance.guard.bean.HouseData;
 import com.zzhou.entrance.guard.bean.ImeiNo;
 import com.zzhou.entrance.guard.http.CallBackListener;
 import com.zzhou.entrance.guard.sendNotify.SendNotify;
 import com.zzhou.entrance.guard.source.CursorHelper;
 import com.zzhou.entrance.guard.source.Ws;
+import com.zzhou.entrance.guard.util.BaiduAuthService;
 import com.zzhou.entrance.guard.util.FileUtils;
 import com.zzhou.entrance.guard.util.LogUtils;
 import com.zzhou.entrance.guard.util.PackageUtils;
 import com.zzhou.entrance.guard.util.ShellUtils;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.netty.util.internal.StringUtil;
 import io.reactivex.Observable;
@@ -39,6 +47,13 @@ import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
+import okhttp3.FormBody;
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+
+import static com.zzhou.entrance.guard.util.BaiduAuthService.getAuth;
 
 /**
  * 实现接口类-IMainContract.IModel
@@ -180,8 +195,10 @@ public class MainModel implements IMainContract.IModel {
 
     @Override
     public void getAccounts() {
-        LogUtils.d("start update accounts");
+        LogUtils.d("start update accounts----更新本地住户信息");
         EasyHttp.get(Constants.Api.UPDATE_ACCOUNTS)
+                .connectTimeout(600000)
+                .readTimeOut(600000)
                 .execute(new SimpleCallBack<String>() {
                     @Override
                     public void onError(ApiException e) {
@@ -229,6 +246,8 @@ public class MainModel implements IMainContract.IModel {
 
         //获取服务器端户主信息
         EasyHttp.get(Constants.Api.UPDATAE_HOUSER)
+                .connectTimeout(600000)
+                .readTimeOut(600000)
                 .execute(new SimpleCallBack<String>() {
                     @Override
                     public void onError(ApiException e) {
@@ -364,6 +383,8 @@ public class MainModel implements IMainContract.IModel {
     public void imeiAccount(final CallBackListener callBack) {
         LogUtils.d("start imeiAccount");
         EasyHttp.get(Constants.Api.TEL)
+                .connectTimeout(600000)
+                .readTimeOut(600000)
                 .execute(new SimpleCallBack<String>() {
                     @Override
                     public void onError(ApiException e) {
@@ -506,6 +527,111 @@ public class MainModel implements IMainContract.IModel {
             }
         });
     }
+
+    /**
+     * 初始化人脸识别
+     * @param houseNo
+     * @param callBack
+     */
+    @Override
+    public void initfacecheck(final String houseNo, final CallBackListener callBack){
+        LogUtils.d("初始化人脸识别--准备3- 验证houseNo是否存在 = " + houseNo);
+        Observable observable = Observable.create(new ObservableOnSubscribe<HouseData>() {
+            @Override
+            public void subscribe(ObservableEmitter<HouseData> e) {
+                try {
+                    Cursor cursor = MyApplication.getInstance().getResovler().query(Ws.HouseTable.CONTENT_URI, null,
+                            Ws.HouseTable.NO + "=?", new String[]{houseNo}, null);
+//                    Cursor cursor = MyApplication.getInstance().getResovler().query(Ws.AccountTable.CONTENT_URI, null,
+//                            null, null, null);
+                    if (cursor == null) {
+                        LogUtils.d("initfacecheck >> error cursor is null ");
+                        e.onError(new Throwable("initfacecheck >> error cursor is null "));
+                    } else {
+                        LogUtils.d("initfacecheck >> cursor size = " + cursor.getCount());
+                        if (cursor.getCount() > 0) {
+                            cursor.moveToFirst();
+                            HouseData house = HouseData.fromCursor(new CursorHelper(cursor));
+                            e.onNext(house);
+                        } else {
+                            e.onError(new Throwable("initfacecheck >>  no account"));
+                        }
+                    }
+                    e.onComplete();
+                } catch (Exception e1) {
+                    LogUtils.d("initfacecheck excetion >> " + e1.getMessage());
+                    e.onError(new Throwable(e1.getMessage()));
+                }
+            }
+        }).subscribeOn(Schedulers.newThread());
+        Disposable disposable = observable.subscribe(new Consumer<HouseData>() {
+            @Override
+            public void accept(HouseData datas) throws Exception {
+                if (datas == null) {
+                    callBack.onResult(false, null);
+                } else {
+//                            Toast.makeText(MyApplication.getInstance(),"accept",Toast.LENGTH_SHORT).show();
+                    callBack.onResult(true, datas);
+                }
+            }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+//                        Toast.makeText(MyApplication.getInstance(),"onerro",Toast.LENGTH_SHORT).show();
+                callBack.onResult(false, null);
+            }
+        });
+    }
+
+    /**
+     * 人脸识别-上传抓拍照片
+     * @param facephoto_file
+     * @param callBack
+     */
+    @Override
+    public void facecheck(final String facephoto_file,String houseId,String deviceId,final CallBackListener callBack){
+        MediaType MEDIA_TYPE_JSON= MediaType.parse("application/json; charset=utf-8");
+        RequestBody requestBody = new FormBody.Builder()
+                .add("image",facephoto_file)
+                .add("houseId", houseId)
+                .add("deviceId", deviceId)
+                .build();
+        LogUtils.d("人脸识别---步骤3---上传抓拍照片："+"facephoto_file>>>>"+facephoto_file.length()+"----houseId>>>>>>"+houseId+"----deviceId>>>>"+deviceId);
+        EasyHttp.post(Constants.Api.FACE_DETECT)
+                .connectTimeout(600000)
+                .readTimeOut(600000)
+                .headers("Content-Type","application/json")
+                /*.params("houseId",houseId)
+                .params("deviceId",deviceId)*/
+                .requestBody(requestBody)
+                .execute(new SimpleCallBack<String>() {
+                    @Override
+                    public void onError(ApiException e) {
+                        LogUtils.e("facecheck error >> " + e.getMessage());
+                        callBack.onResult(false, "");
+                    }
+
+                    @Override
+                    public void onSuccess(String s) {
+                        LogUtils.d("facecheck onSuccess>>" + s);
+                        try {
+                            JSONObject json = new JSONObject(s);
+                            LogUtils.d("json--code  >>  "+json.getInt("code"));
+                            //0是成功、1是失败
+                            if (json.getInt("code") == 0) {
+                                callBack.onResult(true, null);
+                            } else {
+                                callBack.onResult(false, null);
+                            }
+                        } catch (JSONException e) {
+                            callBack.onResult(false, "人脸识别接口错误");
+                            LogUtils.d("facecheck json erro  >>" + e.getMessage());
+                        }
+                    }
+                });
+    }
+
+
 
     //下载广告文件
     private void downFile(int index, final List<Ads> adslist, final CallBackListener listener) {

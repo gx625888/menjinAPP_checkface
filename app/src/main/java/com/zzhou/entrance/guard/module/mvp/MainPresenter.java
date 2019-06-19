@@ -1,9 +1,12 @@
 package com.zzhou.entrance.guard.module.mvp;
 
+import android.graphics.Bitmap;
+
 import com.zzhou.entrance.guard.AppConfig;
 import com.zzhou.entrance.guard.MyApplication;
 import com.zzhou.entrance.guard.bean.AccountData;
 import com.zzhou.entrance.guard.bean.Ads;
+import com.zzhou.entrance.guard.bean.BaiduFacecheckResult;
 import com.zzhou.entrance.guard.bean.HouseData;
 import com.zzhou.entrance.guard.bean.ImeiNo;
 import com.zzhou.entrance.guard.http.CallBackListener;
@@ -11,6 +14,7 @@ import com.zzhou.entrance.guard.util.DynamicPwd;
 import com.zzhou.entrance.guard.util.FileUtils;
 import com.zzhou.entrance.guard.util.LogUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -199,7 +203,7 @@ public class MainPresenter implements IMainContract.IPresenter {
      */
     @Override
     public void callAccount(String houseNo) {
-//        iView.callAccountResult(true, "15555155506",1);
+        LogUtils.d("呼叫流程-准备-2：prepares- callAccount");
         iModel.callAccount(houseNo, new CallBackListener() {
             @Override
             public void onResult(boolean isSuccess, Object result) {
@@ -241,6 +245,44 @@ public class MainPresenter implements IMainContract.IPresenter {
                     iView.callMobileAccountResult(false, "",0);
                 }
 
+            }
+        });
+    }
+
+    /**
+     * 初始化人像识别
+     * @param housedNo
+     */
+    public void initfacecheck(String housedNo){
+        LogUtils.d(TAG,"人脸识别准备--2");
+        iModel.initfacecheck(housedNo, new CallBackListener() {
+            @Override
+            public void onResult(boolean isSuccess, Object result) {
+                if (isSuccess) {
+                    HouseData house = (HouseData) result;
+                    iView.initfacecheckResult(true, house.getId(),0);
+                } else {
+                    iView.initfacecheckResult(false, "",0);
+                }
+            }
+        });
+    }
+
+    /**
+     *人脸识别
+     * @param facephoto_file
+     */
+    @Override
+    public void facecheck(String facephoto_file,String houseId,String deviceId) {
+        LogUtils.d(TAG,"人脸识别-facecheck----步骤2："+"facephoto_file>>>>"+facephoto_file.length()+"----houseId>>>>"+houseId+"----deviceId>>>>"+deviceId);
+        iModel.facecheck(facephoto_file,houseId,deviceId, new CallBackListener(){
+            @Override
+            public void onResult(boolean isSuccess, Object result) {
+                if (isSuccess) {
+                    iView.facecheckResult(true, "",0);
+                } else {
+                    iView.facecheckResult(false, "",0);
+                }
             }
         });
     }

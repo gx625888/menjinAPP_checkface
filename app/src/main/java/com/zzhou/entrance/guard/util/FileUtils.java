@@ -171,6 +171,17 @@ public class FileUtils {
     }
 
     /**
+     * 获取指定目录下文件的数量
+     * @param filepath
+     * @return
+     */
+    public  static int AllFileNum(String filepath){
+        File filelist = new File(filepath);
+        int filesNum = filelist.listFiles().length;
+        return filesNum;
+    }
+
+    /**
      * 文件复制.
      */
     public static boolean copy(String srcFile, String destFile) {

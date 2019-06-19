@@ -37,6 +37,8 @@ public interface Constants {
         String TEL = "tel.do";
         /*获取户主电话信息*/
         String UPDATAE_HOUSER = "update/houses.do";
+        /*人脸检测*/
+        String FACE_DETECT = "face/detect.do";
     }
     interface CallState{
         //incoming,calling,connecting,comfirmed,invalid,disconnected.

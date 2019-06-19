@@ -17,6 +17,8 @@
     <string name="call_finish">呼叫无法接通，已转接....</string>
     <string name="call_on">呼叫接通....</string>
     <string name="app_install_ing">正在初始化，请稍后....</string>
+    <string name="on_initfacecheck_tips">正在获取人像，请稍后....</string>
+    <string name="on_facecheck_tips">正在进行人像识别，请稍后....</string>
 
     <string name="nfc_disabled">NFC disabled</string>
     <string name="nfc_enabled">NFC enabled</string>

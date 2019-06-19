@@ -56,6 +56,7 @@ def renameAPK(variant, defaultConfig) {
         outputFileName = fileName
     }
 }
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
