@@ -262,7 +262,7 @@ public class MainPresenter implements IMainContract.IPresenter {
                     HouseData house = (HouseData) result;
                     iView.initfacecheckResult(true, house.getId(),0);
                 } else {
-                    iView.initfacecheckResult(false, "",0);
+                    iView.initfacecheckResult(false, "门牌号错误",0);
                 }
             }
         });
@@ -275,15 +275,19 @@ public class MainPresenter implements IMainContract.IPresenter {
     @Override
     public void facecheck(String facephoto_file,String houseId,String deviceId) {
         LogUtils.d(TAG,"人脸识别-facecheck----步骤2："+"facephoto_file>>>>"+facephoto_file.length()+"----houseId>>>>"+houseId+"----deviceId>>>>"+deviceId);
-        iModel.facecheck(facephoto_file,houseId,deviceId, new CallBackListener(){
-            @Override
-            public void onResult(boolean isSuccess, Object result) {
-                if (isSuccess) {
-                    iView.facecheckResult(true, "",0);
-                } else {
-                    iView.facecheckResult(false, "",0);
+        if(houseId.length()>0){
+            iModel.facecheck(facephoto_file,houseId,deviceId, new CallBackListener(){
+                @Override
+                public void onResult(boolean isSuccess, Object result) {
+                    if (isSuccess) {
+                        iView.facecheckResult(true, "",0);
+                    } else {
+                        iView.facecheckResult(false, "人脸识别未通过",0);
+                    }
                 }
-            }
-        });
+            });
+        }else{
+            iView.facecheckResult(false, "没有房间号",0);
+        }
     }
 }

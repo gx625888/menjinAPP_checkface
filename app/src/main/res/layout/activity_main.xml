@@ -15,6 +15,11 @@
         android:id="@+id/main"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+        <SurfaceView
+            android:id="@+id/surface_view1"
+            android:layout_height="0dp"
+            android:layout_width="0dp">
+        </SurfaceView>
         <ImageView
             android:id="@+id/activity_screen_image"
             android:layout_width="match_parent"
@@ -27,12 +32,6 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone"/>
-        <SurfaceView
-            android:id="@+id/surface_view1"
-            android:layout_width="0.1dp"
-            android:layout_height="0.1dp"
-            >
-        </SurfaceView>
         <ImageView
             android:id="@+id/QrCode_image"
             android:layout_width="match_parent"
@@ -74,12 +73,4 @@
         android:id="@+id/camera"
         android:layout_width="0.1dp"
         android:layout_height="0.1dp"></FrameLayout>
-    <FrameLayout
-        android:id="@+id/face_camera"
-        android:layout_width="0.1dp"
-        android:layout_height="0.1dp"></FrameLayout>
-    <!--<FrameLayout-->
-        <!--android:id="@+id/surface_view3"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"></FrameLayout>-->
 </FrameLayout>

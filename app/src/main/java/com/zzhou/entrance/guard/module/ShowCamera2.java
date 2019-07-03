@@ -45,12 +45,6 @@ public class ShowCamera2 extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceDestroyed(SurfaceHolder arg0) {
 
-        if (null != theCamera) {
-            theCamera.stopPreview();
-            theCamera.release();
-            theCamera = null;
-        }
-        holdMe.removeCallback(this);
     }
 
     public void setCameraDisplayOrientation(Activity activity) {

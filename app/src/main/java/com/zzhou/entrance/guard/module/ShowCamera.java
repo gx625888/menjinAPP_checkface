@@ -29,8 +29,8 @@ protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera_surface);
 
-        LogUtils.d("<<<<<ShowCamera-Activity>>>>>");
-        surfaceview = (SurfaceView) findViewById(R.id.surface_view2);
+        LogUtils.d("<<<<<ShowCamera>>>>>");
+        surfaceview = (SurfaceView) findViewById(R.id.surface_view1);
         surfaceholder = surfaceview.getHolder();
         surfaceholder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         surfaceholder.addCallback(this);
@@ -111,9 +111,9 @@ public void surfaceCreated(SurfaceHolder holder) {
         // 控制图像的正确显示方向
         private void setDispaly(Camera.Parameters parameters, Camera camera) {
         if (Integer.parseInt(Build.VERSION.SDK) >= 8) {
-        setDisplayOrientation(camera, 90);
+        setDisplayOrientation(camera, 180);
         } else {
-        parameters.setRotation(90);
+        parameters.setRotation(180);
         }
 
         }
